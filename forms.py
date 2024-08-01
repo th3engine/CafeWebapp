@@ -20,10 +20,12 @@ class CreateCafe(FlaskForm):
 
 class UserLogin(FlaskForm):
     email = EmailField("Email: ", validators=[DataRequired(),Email()])
-    password = PasswordField("Password",validators=(DataRequired()))
+    password = PasswordField("Password",validators=[DataRequired()])
+    submit = SubmitField("Sign In")
 
 class RegisterUser(FlaskForm):
     first_name = StringField("First Name: ", validators=[DataRequired()])
     email = EmailField("Email: ",validators=[DataRequired(),Email()])
     password = PasswordField("Password: ",validators=[DataRequired()])
-    conf_password = PasswordField("Password: ", validators=[DataRequired()])
+    conf_password = PasswordField("Confirm Password: ", validators=[DataRequired()])
+    submit = SubmitField("Register")

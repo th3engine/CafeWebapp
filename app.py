@@ -1,10 +1,13 @@
-from flask import Flask, render_template
+from flask import Flask,request, render_template
 from db import db, Cafe
 from flask_bootstrap import Bootstrap5
+from forms import RegisterUser
 import os
 
+from dotenv import load_dotenv; load_dotenv()
+
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"]="sqlite:///cafes.db"
+app.config["SQLALCHEMY_DATABASE_URI"]=os.getenv("DATABASE_URI")
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
 
 Bootstrap5(app)
@@ -29,6 +32,16 @@ def get_cafe(cafe_id):
     cafe = db.get_or_404(Cafe,cafe_id)
 
     return render_template('cafe.html', cafe=cafe)
+
+@app.route("/register",methods=["GET","POST"])
+def register_user():
+    form = RegisterUser()
+
+    if form.validate_on_submit():
+        pass
+
+    return render_template("register.html",form = form)
+
 
 
 
