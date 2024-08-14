@@ -1,7 +1,9 @@
-from flask import Flask,request, render_template, redirect
-from db import db, Cafe
+from flask import Flask,request, render_template, redirect, flash
+from db import db, Cafe, User
 from flask_bootstrap import Bootstrap5
 from forms import RegisterUser, UserLogin
+from flask_login import LoginManager, login_user
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 
 from dotenv import load_dotenv; load_dotenv()
@@ -15,6 +17,14 @@ Bootstrap5(app)
 db.init_app(app)
 with app.app_context():
     db.create_all()
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "/login"
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.get_or_404(User,user_id)
 
 @app.route("/")
 def home():
@@ -38,7 +48,20 @@ def register_user():
     form = RegisterUser()
 
     if form.validate_on_submit():
-        pass
+        user_exists = db.session.execute(db.select(User).where(User.email==form.email.data)).scalar()
+        if user_exists:
+            flash("User with this email already exists. Please log in")
+            return redirect("/login")
+        else:
+            new_user = User(
+                name = form.first_name.data,
+                email = form.email.data,
+                password = generate_password_hash(form.password.data,method="scrypt:32768:8:1")
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            flash("You have successfully registered","message")
+            return redirect("/login")
 
     return render_template("register.html",form = form)
 
@@ -47,13 +70,16 @@ def login():
     form = UserLogin()
     
     if form.validate_on_submit():
-        print("Hello world")
-        return redirect("/")
-
+        user = db.session.execute(db.select(User).where(User.email==form.email.data)).scalar()
+        if user is not None and check_password_hash(user.password,form.password.data):
+            login_user(user)
+            flash("Successfully logged in")
+            return redirect("/login")
+        else:
+            flash("Incorrect credentials")
+            return redirect("/login")
+        
     return render_template('login.html', form = form)
-
-
-
 
 
 if __name__=='__main__':

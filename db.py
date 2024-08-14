@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Boolean
+from flask_login import UserMixin
 
 class Base(DeclarativeBase):
     pass
@@ -21,4 +22,11 @@ class Cafe(db.Model):
     seats: Mapped[String] = mapped_column(String(250), nullable=False)
     coffee_price: Mapped[String] = mapped_column(String(250), nullable=False)
 
+
+class User(UserMixin,db.Model):
+    __tablename__='user'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(250),nullable=False)
+    email: Mapped[str] = mapped_column(String(250),nullable=False)
+    password: Mapped[str] = mapped_column(String(1000))
 

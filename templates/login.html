@@ -24,6 +24,15 @@
           </ul>
         </header>
         <div class="col-lg-8 col-md-10 mx-auto w-50">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                <ul class=flashes>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+                </ul>
+                {% endif %}
+            {% endwith %}        
             <h1 class="h3 mb-3 fw-normal">Please sign in ☕️</h1>
             {{ render_form(form,novalidate=True) }}
         </div>
