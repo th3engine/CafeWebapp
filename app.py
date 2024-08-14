@@ -1,7 +1,7 @@
-from flask import Flask,request, render_template
+from flask import Flask,request, render_template, redirect
 from db import db, Cafe
 from flask_bootstrap import Bootstrap5
-from forms import RegisterUser
+from forms import RegisterUser, UserLogin
 import os
 
 from dotenv import load_dotenv; load_dotenv()
@@ -41,6 +41,16 @@ def register_user():
         pass
 
     return render_template("register.html",form = form)
+
+@app.route('/login',methods=["GET","POST"])
+def login():
+    form = UserLogin()
+    
+    if form.validate_on_submit():
+        print("Hello world")
+        return redirect("/")
+
+    return render_template('login.html', form = form)
 
 
 

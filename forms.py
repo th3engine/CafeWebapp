@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, EmailField, RadioField
-from wtforms.validators import DataRequired, URL, Email
+from wtforms.validators import DataRequired, URL, Email, EqualTo, Length
 from flask_ckeditor import CKEditorField
 
 
@@ -20,12 +20,12 @@ class CreateCafe(FlaskForm):
 
 class UserLogin(FlaskForm):
     email = EmailField("Email: ", validators=[DataRequired(),Email()])
-    password = PasswordField("Password",validators=[DataRequired()])
+    password = PasswordField("Password: ",validators=[DataRequired()])
     submit = SubmitField("Sign In")
 
 class RegisterUser(FlaskForm):
     first_name = StringField("First Name: ", validators=[DataRequired()])
     email = EmailField("Email: ",validators=[DataRequired(),Email()])
-    password = PasswordField("Password: ",validators=[DataRequired()])
+    password = PasswordField("Password: ",validators=[DataRequired(),EqualTo('conf_password', message="Passwords must match"),Length(8,message="Password should be at least 8 characters")])
     conf_password = PasswordField("Confirm Password: ", validators=[DataRequired()])
     submit = SubmitField("Register")
