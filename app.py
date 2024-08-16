@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import os
 
-from dotenv import load_dotenv; load_dotenv()
+# from dotenv import load_dotenv; load_dotenv()
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"]=os.getenv("DATABASE_URI")
