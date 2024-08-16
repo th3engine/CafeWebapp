@@ -24,13 +24,13 @@
           </ul>
         </header>
         <div class="col-lg-8 col-md-10 mx-auto w-50">
-            {% with messages = get_flashed_messages() %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
-                <ul class=flashes>
-                {% for message in messages %}
-                    <li>{{ message }}</li>
+                <div class=flashes>
+                {% for category, message in messages %}
+                <small class="d-inline-flex mb-3 px-2 py-1 fw-semibold text-{{category}}-emphasis bg-{{category}}-subtle border border-{{category}}-subtle rounded-2">{{message}}</small>
                 {% endfor %}
-                </ul>
+                </div>
                 {% endif %}
             {% endwith %}        
             <h1 class="h3 mb-3 fw-normal">Please sign in ☕️</h1>

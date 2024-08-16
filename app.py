@@ -1,9 +1,10 @@
 from flask import Flask,request, render_template, redirect, flash
 from db import db, Cafe, User
 from flask_bootstrap import Bootstrap5
-from forms import RegisterUser, UserLogin
-from flask_login import LoginManager, login_user
+from forms import RegisterUser, UserLogin, CreateCafe
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 import os
 
 from dotenv import load_dotenv; load_dotenv()
@@ -26,6 +27,15 @@ login_manager.login_view = "/login"
 def load_user(user_id):
     return db.get_or_404(User,user_id)
 
+def logout_required(function):
+    @wraps(function)
+    def decorated(*args,**kwargs):
+        if current_user.is_authenticated:
+            return redirect('/')
+        else:
+            return function(*args,**kwargs)
+    return decorated
+
 @app.route("/")
 def home():
 
@@ -44,6 +54,7 @@ def get_cafe(cafe_id):
     return render_template('cafe.html', cafe=cafe)
 
 @app.route("/register",methods=["GET","POST"])
+@logout_required
 def register_user():
     form = RegisterUser()
 
@@ -60,26 +71,93 @@ def register_user():
             )
             db.session.add(new_user)
             db.session.commit()
-            flash("You have successfully registered","message")
+            flash("You have successfully registered",'info')
             return redirect("/login")
 
     return render_template("register.html",form = form)
 
 @app.route('/login',methods=["GET","POST"])
+@logout_required
 def login():
     form = UserLogin()
-    
     if form.validate_on_submit():
         user = db.session.execute(db.select(User).where(User.email==form.email.data)).scalar()
         if user is not None and check_password_hash(user.password,form.password.data):
             login_user(user)
-            flash("Successfully logged in")
-            return redirect("/login")
+            return redirect("/")
         else:
-            flash("Incorrect credentials")
+            flash("Incorrect credentials",'danger')
             return redirect("/login")
         
     return render_template('login.html', form = form)
+
+@app.route('/addcafe',methods=["GET","POST"])
+@login_required
+def add_cafe():
+    form = CreateCafe()
+    if form.validate_on_submit():
+        data = form.data
+        data.pop('submit',None)
+        data.pop('csrf_token',None)
+        new_cafe = Cafe(**data)
+        db.session.add(new_cafe)
+        db.session.commit()
+        flash(f"{data.get('name')} successfully added",'success')
+        return redirect('/cafes')
+    return render_template('add_cafe.html',form=form)
+
+@app.route('/editcafe/<int:cafe_id>',methods=["GET","POST"])
+@login_required
+def edit_cafe(cafe_id):
+    cafe = db.get_or_404(Cafe,cafe_id)
+    form = CreateCafe(
+        name = cafe.name,
+        map_url = cafe.map_url,
+        img_url = cafe.img_url,
+        location = cafe.location,
+        seats = cafe.seats,
+        coffee_price = cafe.coffee_price,
+    )
+    form.submit.label.text = "Modify"
+
+    if form.validate_on_submit():
+        cafe.name = form.name.data
+        cafe.map_url = form.map_url.data
+        cafe.img_url = form.img_url.data
+        cafe.location = form.location.data
+        cafe.has_wifi = form.has_wifi.data
+        cafe.has_toilet = form.has_toilet.data
+        cafe.has_sockets = form.has_sockets.data
+        cafe.can_take_calls = form.can_take_calls.data
+        cafe.seats = form.seats.data
+        cafe.coffee_price = form.coffee_price.data
+
+        db.session.commit()
+
+        return redirect(f"/cafes/{cafe.id}")
+    
+
+
+    return render_template('edit_cafe.html',cafe=cafe,form=form)
+
+@app.route('/delete/<int:cafe_id>')
+@login_required
+def delete_cafe(cafe_id):
+    cafe = db.get_or_404(Cafe,cafe_id)
+    db.session.delete(cafe)
+    db.session.commit()
+    flash(f"{cafe.name} successfully deleted",'success')
+    return redirect('/cafes')
+
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect('/')
+
+    
 
 
 if __name__=='__main__':

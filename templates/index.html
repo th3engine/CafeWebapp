@@ -11,15 +11,24 @@
         <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
           <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
             <svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"></use></svg>
+            {% if current_user.is_authenticated %}
+            <span class="fs-4">Hi {{current_user.name}} 😁</span>
+            {% else %}
             <span class="fs-4">Cafes in London</span>
+            {% endif %}
           </a>
     
           <ul class="nav nav-pills">
             <li class="nav-item"><a href="#" class="nav-link active" aria-current="page">Home</a></li>
             <li class="nav-item"><a href="{{url_for('get_all_cafes')}}" class="nav-link">All Cafes</a></li>
             <li class="nav-item"><a href="#" class="nav-link">About</a></li>
+            {% if current_user.is_authenticated %}
+            <li class="nav-item"><a href="{{url_for('add_cafe')}}" class="nav-link">Add new location</a></li>
+            <li class="nav-item"><a href="{{url_for('logout')}}" class="nav-link">Logout</a></li>            
+            {% else %}
             <li class="nav-item"><a href="{{url_for('register_user')}}" class="nav-link">Register</a></li>
             <li class="nav-item"><a href="{{url_for('login')}}" class="nav-link">Login</a></li>
+            {% endif %}
           </ul>
         </header>
       </div>
@@ -33,8 +42,12 @@
             <h1 class="display-5 fw-bold text-body-emphasis lh-1 mb-3">The best study cafes in London</h1>
             <p class="lead">From coffee shops to hotel lobbies, discover the best co-working and study spaces in London to work and connect </p>
             <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-              <button type="button" class="btn btn-primary btn-lg px-4 me-md-2">Explore London</button>
-              <a href="{{url_for('register_user')}}" type="button" class="btn btn-outline-secondary btn-lg px-4">Join the Community</a>
+              <a href="{{url_for('get_all_cafes')}}" type="button" class="btn btn-primary btn-lg px-4 me-md-2">Explore London</a>
+              {% if current_user.is_authenticated %}
+              <a href="{{url_for('add_cafe')}}" type="button" class="btn btn-outline-secondary btn-lg px-4">Add to the Database</a>              
+              {% else %}
+              <a href="{{url_for('register_user')}}" type="button" class="btn btn-outline-secondary btn-lg px-4">Join the Community</a>              
+              {% endif %}
             </div>
           </div>
         </div>
