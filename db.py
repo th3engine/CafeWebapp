@@ -1,7 +1,8 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, Boolean
+from sqlalchemy import Integer, String, Boolean, DateTime
 from flask_login import UserMixin
+from datetime import datetime
 
 class Base(DeclarativeBase):
     pass
@@ -29,4 +30,8 @@ class User(UserMixin,db.Model):
     name: Mapped[str] = mapped_column(String(250),nullable=False)
     email: Mapped[str] = mapped_column(String(250),nullable=False)
     password: Mapped[str] = mapped_column(String(1000))
+    created_on: Mapped[datetime] = mapped_column(DateTime,nullable=False)
+    confirmed: Mapped[bool] = mapped_column(Boolean,nullable=False,default=False)
+    confirmed_on: Mapped[datetime] = mapped_column(DateTime,nullable=True)
+
 

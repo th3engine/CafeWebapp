@@ -4,14 +4,18 @@ from flask_bootstrap import Bootstrap5
 from forms import RegisterUser, UserLogin, CreateCafe
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from itsdangerous import URLSafeTimedSerializer
 from functools import wraps
 import os
+from datetime import datetime as dt
+from email_verification import generate_token, confirm_token, send_email
 
-# from dotenv import load_dotenv; load_dotenv()
+from dotenv import load_dotenv; load_dotenv()
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"]=os.getenv("DATABASE_URI")
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
+app.config['SECURITY_PASSWORD_SALT'] = os.getenv("SECURITY_PASSWORD_SALT")
 
 Bootstrap5(app)
 
@@ -34,6 +38,15 @@ def logout_required(function):
             return redirect('/')
         else:
             return function(*args,**kwargs)
+    return decorated
+
+def confirmation_required(function):
+    @wraps(function)
+    def decorated(*args,**kwargs):
+        if current_user.confirmed:
+            return function(*args,**kwargs)
+        else:
+            return render_template("confirm_registration.html")
     return decorated
 
 @app.route("/")
@@ -67,14 +80,36 @@ def register_user():
             new_user = User(
                 name = form.first_name.data,
                 email = form.email.data,
-                password = generate_password_hash(form.password.data,method="scrypt:32768:8:1")
+                password = generate_password_hash(form.password.data,method="scrypt:32768:8:1"),
+                created_on = dt.now().replace(microsecond=0),
             )
             db.session.add(new_user)
             db.session.commit()
-            flash("You have successfully registered",'info')
+            token = generate_token(form.email.data)
+            flash("You have successfully registered. Please confirm your email address before logging in",'info')
+            send_email(token)
             return redirect("/login")
 
     return render_template("register.html",form = form)
+
+@app.route('/register/confirm/<token>')
+@login_required
+def confirm(token):
+    if current_user.confirmed:
+        flash("Account already confirmed","info")
+        return redirect('/cafes')
+    email = confirm_token(token)
+    user = db.session.execute(db.select(User).where(User.email==current_user.email)).scalar()
+    if user.email == email:
+        user.confirmed = True
+        user.confirmed_on = dt.now().replace(microsecond=0)
+        db.session.add(user)
+        db.session.commit()
+        flash("You have successsfully confirmed your account","success")
+        return redirect('/cafes')
+    else:
+        message = "The confirmation link is invalid or expired"
+        return render_template("confirm_registration.html", message = message)
 
 @app.route('/login',methods=["GET","POST"])
 @logout_required
@@ -92,6 +127,7 @@ def login():
     return render_template('login.html', form = form)
 
 @app.route('/addcafe',methods=["GET","POST"])
+@confirmation_required
 @login_required
 def add_cafe():
     form = CreateCafe()
@@ -106,7 +142,9 @@ def add_cafe():
         return redirect('/cafes')
     return render_template('add_cafe.html',form=form)
 
+
 @app.route('/editcafe/<int:cafe_id>',methods=["GET","POST"])
+@confirmation_required
 @login_required
 def edit_cafe(cafe_id):
     cafe = db.get_or_404(Cafe,cafe_id)
@@ -141,6 +179,7 @@ def edit_cafe(cafe_id):
     return render_template('edit_cafe.html',cafe=cafe,form=form)
 
 @app.route('/delete/<int:cafe_id>')
+@confirmation_required
 @login_required
 def delete_cafe(cafe_id):
     cafe = db.get_or_404(Cafe,cafe_id)
