@@ -1,14 +1,14 @@
-from flask import Flask,request, render_template, redirect, flash
+from flask import Flask,request, render_template, redirect, flash, url_for
 from db import db, Cafe, User
 from flask_bootstrap import Bootstrap5
 from forms import RegisterUser, UserLogin, CreateCafe
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from itsdangerous import URLSafeTimedSerializer
+from flask_mail import Mail, Message
 from functools import wraps
 import os
 from datetime import datetime as dt
-from email_verification import generate_token, confirm_token, send_email
+from email_verification import generate_token, confirm_token
 
 from dotenv import load_dotenv; load_dotenv()
 
@@ -18,6 +18,22 @@ app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
 app.config['SECURITY_PASSWORD_SALT'] = os.getenv("SECURITY_PASSWORD_SALT")
 
 Bootstrap5(app)
+
+app.config.update(
+    # Mail Settings
+    MAIL_DEFAULT_SENDER = "noreply@flask.com",
+    MAIL_SERVER = "smtp.gmail.com",
+    MAIL_PORT = 465,
+    MAIL_USE_TLS = False,
+    MAIL_USE_SSL = True,
+    MAIL_DEBUG = False,
+    MAIL_USERNAME = "noreplycafeapp@gmail.com",
+    MAIL_PASSWORD = os.getenv("APP_PASSWORD")
+)
+mail = Mail(app)
+
+
+
 
 db.init_app(app)
 with app.app_context():
@@ -30,6 +46,16 @@ login_manager.login_view = "/login"
 @login_manager.user_loader
 def load_user(user_id):
     return db.get_or_404(User,user_id)
+
+
+def send_email(token,email):
+    msg = Message(
+        subject = "Please confirm your email",
+        recipients=[email],
+        html=render_template('email_verification.html',confirm_url = url_for('confirm',token=token,_external=True)),
+        sender=app.config["MAIL_DEFAULT_SENDER"],
+    )
+    mail.send(msg)
 
 def logout_required(function):
     @wraps(function)
@@ -72,23 +98,25 @@ def register_user():
     form = RegisterUser()
 
     if form.validate_on_submit():
-        user_exists = db.session.execute(db.select(User).where(User.email==form.email.data)).scalar()
+        email = form.email.data
+        user_exists = db.session.execute(db.select(User).where(User.email==email)).scalar()
         if user_exists:
             flash("User with this email already exists. Please log in")
             return redirect("/login")
         else:
             new_user = User(
                 name = form.first_name.data,
-                email = form.email.data,
+                email = email,
                 password = generate_password_hash(form.password.data,method="scrypt:32768:8:1"),
                 created_on = dt.now().replace(microsecond=0),
             )
             db.session.add(new_user)
             db.session.commit()
-            token = generate_token(form.email.data)
+            login_user(new_user)
+            token = generate_token(email)
             flash("You have successfully registered. Please confirm your email address before logging in",'info')
-            send_email(token)
-            return redirect("/login")
+            send_email(token, email)
+            return redirect("/cafes")
 
     return render_template("register.html",form = form)
 
@@ -110,6 +138,16 @@ def confirm(token):
     else:
         message = "The confirmation link is invalid or expired"
         return render_template("confirm_registration.html", message = message)
+    
+@app.route('/register/reconfirm')
+@login_required
+def resend_mail():
+    email = current_user.email
+    token = generate_token(email)
+    send_email(token,email)
+    message = "A new confirmation link has been resent "
+    return render_template('confirm_registration.html',message=message)
+
 
 @app.route('/login',methods=["GET","POST"])
 @logout_required

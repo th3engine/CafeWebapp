@@ -32,11 +32,11 @@
         <div class="bg-body-tertiary p-5 rounded mt-3">
             <h1>Not quite</h1>
             {% if message %}
-            <p class="lead">{{message}} 😣 </p>
+            <p class="lead">{{message}} 😉 </p>
             {% else %}
             <p class="lead">Please confirm your account through your email address to continue. 😀 </p>
             {% endif %}
-            <a class="btn btn-lg btn-primary" href="#" role="button">Resend verification link »</a>
+            <a class="btn btn-lg btn-primary" href="{{url_for('resend_mail')}}" role="button" onclick="class='disabled'">Resend verification link »</a>
         </div>
         </main>
 

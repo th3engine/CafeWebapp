@@ -1,6 +1,7 @@
 from itsdangerous import URLSafeTimedSerializer,SignatureExpired,BadSignature
 from flask import render_template, url_for
 import os
+from smtplib import SMTP, SMTPResponseException
 
 
 def generate_token(email):
@@ -17,8 +18,3 @@ def confirm_token(token, expiration=3600):
         return email
     except (SignatureExpired,BadSignature):
         return False
-    
-#TODO
-def send_email(token):
-    with open('token.txt','a') as file:
-        file.write(f"{token}\n")
