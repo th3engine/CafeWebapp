@@ -5,6 +5,7 @@ from forms import RegisterUser, UserLogin, CreateCafe
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
+from flask_migrate import Migrate
 from functools import wraps
 import os
 from datetime import datetime as dt
@@ -31,6 +32,7 @@ app.config.update(
     MAIL_PASSWORD = os.getenv("APP_PASSWORD")
 )
 mail = Mail(app)
+migrate = Migrate(app,db)
 
 
 
